@@ -70,6 +70,23 @@ class Restaurants(Resource):
 # Add the Restaurants resource to handle the "/restaurants" route
 api.add_resource(Restaurants, "/restaurants")
 
+class RestaurantByID(Resource):
+    def get(self, id):
+        restaurant = Restaurant.query.filter_by(id = id).first()
+        
+        if restaurant:
+            response = make_response(restaurant_schema.dump(restaurant), 200)
+
+        else:
+            response_dict = {"error": "Restaurant not found!"}
+
+            response = make_response(response_dict, 404)
+        
+        return response
+
+
+api.add_resource(RestaurantByID, '/restaurants/<int:id>')
+
 # Entry point of the application
 if __name__ == "__main__":
     app.run(port=5555)
