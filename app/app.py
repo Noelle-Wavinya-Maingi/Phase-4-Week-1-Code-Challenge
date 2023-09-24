@@ -1,8 +1,8 @@
 # Import necessary modules and classes
-from flask import Flask, make_response, request
+from flask import Flask, make_response
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
-from models import db, Restaurant, RestaurantPizza
+from models import db, Restaurant
 from flask_marshmallow import Marshmallow
 
 # Create a Flask application
@@ -16,15 +16,22 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 migrate = Migrate(app, db)
 db.init_app(app)
 
-# Initialize Marshmallow for serialization/deserialization
+# Initialize Marshmallow for serialization
 ma = Marshmallow(app)
 
 
-# Create a Marshmallow schema for the Restaurant model
-class RestaurantSchema(ma.SQLAlchemyAutoSchema):
+class RestaurantSchema(ma.SQLAlchemySchema):
     class Meta:
         model = Restaurant
 
+    id = ma.auto_field()
+    name = ma.auto_field()
+    address = ma.auto_field()
+
+
+# Create instances of the Restaurant schema for single and multiple objects
+restaurant_schema = RestaurantSchema()
+restaurants_schema = RestaurantSchema(many=True)
 
 # Initialize Flask-RESTful API
 api = Api(app)
@@ -35,8 +42,11 @@ class Home(Resource):
     def get(self):
         # Create a response dictionary
         response_dict = {"home": "Welcome to the Restaurant API."}
+
         # Create an HTTP response with the dictionary and status code 200 (OK)
-        return make_response(response_dict, 200)
+        response = make_response(response_dict, 200)
+
+        return response
 
 
 # Add the Home resource to handle the root ("/") route
@@ -49,49 +59,45 @@ class Restaurants(Resource):
         # Retrieve all restaurants from the database
         restaurants = Restaurant.query.all()
         # Serialize the restaurants using the schema
-        restaurant_schema = RestaurantSchema(many=True)
-        response_dict = {"restaurants": restaurant_schema.dump(restaurants)}
-        return make_response(response_dict, 200)
+        response = make_response(restaurants_schema.dump(restaurants), 200)
+
+        return response
 
 
 # Add the Restaurants resource to handle the "/restaurants" route
 api.add_resource(Restaurants, "/restaurants")
 
 
-# Define a Resource for the '/restaurants/<int:id>' route
+# Define a Resource for the "/restaurants/<int:id>" route
 class RestaurantByID(Resource):
     def get(self, id):
-        # Retrieve a single restaurant by ID
-        restaurant = Restaurant.query.get(id)
+        # Retrieve a single restaurant by its ID
+        restaurant = Restaurant.query.filter_by(id=id).first()
         if restaurant:
             # Serialize the restaurant using the schema for a single object
-            restaurant_schema = RestaurantSchema()
-            response_dict = {"restaurant": restaurant_schema.dump(restaurant)}
-            return make_response(response_dict, 200)
+            response = make_response(restaurant_schema.dump(restaurant), 200)
         else:
-            # If the restaurant with the specified ID does not exist, return an error and status code 404
-            response_dict = {"error": "Restaurant not found!"}
-            return make_response(response_dict, 404)
+            # If the restaurant with the specified ID doesn't exist, return a 404 response
+            response_dict = {"error": "Restaurant not found"}
+            response = make_response(response_dict, 404)
+
+        return response
 
     def delete(self, id):
         # Retrieve a single restaurant by ID
         restaurant = Restaurant.query.get(id)
         if restaurant:
-            # Delete associated RestaurantPizza first
-            RestaurantPizza.query.filter_by(restaurant_id=id).delete()
-            # Then delete the restaurant
+            # Delete the restaurant from the database
             db.session.delete(restaurant)
             db.session.commit()
-
             response_dict = {"message": "Restaurant successfully deleted."}
-
-            return make_response(response_dict, 204)
+            return make_response(response_dict, 200)
         else:
             response_dict = {"error": "Restaurant not found!"}
             return make_response(response_dict, 404)
 
 
-# Add RestaurantByID resource to handle the route '/restaurants/<int:id>'
+# Add the RestaurantByID resource to handle the "/restaurants/<int:id>" route
 api.add_resource(RestaurantByID, "/restaurants/<int:id>")
 
 # Entry point of the application
