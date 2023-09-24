@@ -2,7 +2,7 @@
 from flask import Flask, make_response
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
-from models import db, Restaurant
+from models import db, Restaurant, Pizza, RestaurantPizza
 from flask_marshmallow import Marshmallow
 
 # Create a Flask application
@@ -32,6 +32,23 @@ class RestaurantSchema(ma.SQLAlchemySchema):
 # Create instances of the Restaurant schema for single and multiple objects
 restaurant_schema = RestaurantSchema()
 restaurants_schema = RestaurantSchema(many=True)
+
+
+class PizzaSchema(ma.SQLAlchemySchema):
+    class Meta:
+        model = Pizza
+
+    id = ma.auto_field()
+    name = ma.auto_field()
+    ingredients = ma.auto_field()
+    created_at = ma.auto_field()
+    updated_at = ma.auto_field()
+
+
+# Create instances of the Pizza schema for single and multiple objects
+pizza_schema = PizzaSchema()
+pizzas_schema = PizzaSchema(many=True)
+
 
 # Initialize Flask-RESTful API
 api = Api(app)
@@ -84,21 +101,86 @@ class RestaurantByID(Resource):
         return response
 
     def delete(self, id):
-        # Retrieve a single restaurant by ID
-        restaurant = Restaurant.query.get(id)
-        if restaurant:
-            # Delete the restaurant from the database
-            db.session.delete(restaurant)
-            db.session.commit()
-            response_dict = {"message": "Restaurant successfully deleted."}
-            return make_response(response_dict, 200)
-        else:
-            response_dict = {"error": "Restaurant not found!"}
-            return make_response(response_dict, 404)
+        try:
+            restaurant = Restaurant.query.filter_by(id=id).first()
+
+            if restaurant:
+                RestaurantPizza.query.filter_by(restaurant_id=id).delete()
+                
+                db.session.delete(restaurant)
+                db.session.commit()
+
+                response_dict = {"Message": "Restaurant deleted successfully!"}
+
+                response = make_response(response_dict, 200)
+
+            else:
+                response_dict = {"error": "Restaurant not found!"}
+
+                response = make_response(response_dict, 404)
+
+        except Exception as e:
+            response_dict = {"error": str(e)}
+
+            response = make_response(response_dict, 500)
+
+        return response
 
 
 # Add the RestaurantByID resource to handle the "/restaurants/<int:id>" route
 api.add_resource(RestaurantByID, "/restaurants/<int:id>")
+
+
+class Pizzas(Resource):
+    def get(self):
+        # Retrieve all pizzas from the database
+        pizza = Pizza.query.all()
+        # Serialize the pizzas using the schema
+        response = make_response(pizzas_schema.dump(pizza), 200)
+
+        return response
+
+
+api.add_resource(Pizzas, "/pizzas")
+
+
+class PizzaByID(Resource):
+    def get(self, id):
+        
+        response_dict = Pizza.query.filter_by(id=id).first()
+
+        response = make_response(pizza_schema.dump(response_dict), 200)
+
+        return response
+
+    def delete(self, id):
+        try:
+            pizza = Pizza.query.filter_by(id=id).first()
+
+            if pizza:
+                RestaurantPizza.query.filter_by(pizza_id=id).delete()
+
+                db.session.delete(pizza)
+                db.session.commit()
+
+                response_dict = {"Message": "Pizza deleted successfully!"}
+
+                response = make_response(response_dict, 200)
+
+            else:
+                response_dict = {"error": "Pizza not found!"}
+
+                response = make_response(response_dict, 404)
+
+        except Exception as e:
+            response_dict = {"error": str(e)}
+
+            response = make_response(response_dict, 500)
+
+        return response
+
+
+api.add_resource(PizzaByID, "/pizzas/<int:id>")
 
 # Entry point of the application
 if __name__ == "__main__":
