@@ -105,8 +105,10 @@ class RestaurantByID(Resource):
             restaurant = Restaurant.query.filter_by(id=id).first()
 
             if restaurant:
+                # Delete associated records in the RestaurantPizza
                 RestaurantPizza.query.filter_by(restaurant_id=id).delete()
-                
+
+                # Delete the restaurant from the database
                 db.session.delete(restaurant)
                 db.session.commit()
 
@@ -120,6 +122,7 @@ class RestaurantByID(Resource):
                 response = make_response(response_dict, 404)
 
         except Exception as e:
+            # Handle any exceptions that may occur during the deletion process
             response_dict = {"error": str(e)}
 
             response = make_response(response_dict, 500)
@@ -141,12 +144,12 @@ class Pizzas(Resource):
         return response
 
 
+# Add the Pizzas resource to handle the "/pizzas" route
 api.add_resource(Pizzas, "/pizzas")
 
 
 class PizzaByID(Resource):
     def get(self, id):
-        
         response_dict = Pizza.query.filter_by(id=id).first()
 
         response = make_response(pizza_schema.dump(response_dict), 200)
@@ -158,8 +161,10 @@ class PizzaByID(Resource):
             pizza = Pizza.query.filter_by(id=id).first()
 
             if pizza:
+                # Delete associated records in the RestaurantPizza
                 RestaurantPizza.query.filter_by(pizza_id=id).delete()
 
+                # Delete the pizza from the database
                 db.session.delete(pizza)
                 db.session.commit()
 
@@ -180,6 +185,7 @@ class PizzaByID(Resource):
         return response
 
 
+# Add the PizzaByID resource to handle the "/pizzas/<int:id>" route
 api.add_resource(PizzaByID, "/pizzas/<int:id>")
 
 # Entry point of the application
