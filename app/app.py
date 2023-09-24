@@ -70,21 +70,25 @@ class Restaurants(Resource):
 # Add the Restaurants resource to handle the "/restaurants" route
 api.add_resource(Restaurants, "/restaurants")
 
+#Define a Resource for the '/restaurants/<int:id>' route
 class RestaurantByID(Resource):
     def get(self, id):
+        #Retrieve a single restaurant by ID
         restaurant = Restaurant.query.filter_by(id = id).first()
         
         if restaurant:
+            #Serialize the restaurant using the schema for a single object
             response = make_response(restaurant_schema.dump(restaurant), 200)
 
         else:
+            #If the restaurant with the specified ID does not exist,return an error and status code 404
             response_dict = {"error": "Restaurant not found!"}
 
             response = make_response(response_dict, 404)
         
         return response
 
-
+#Add RestaurantByID resource to handle the route '/restaurants/<int:id>'
 api.add_resource(RestaurantByID, '/restaurants/<int:id>')
 
 # Entry point of the application
