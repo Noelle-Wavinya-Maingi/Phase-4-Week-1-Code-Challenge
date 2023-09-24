@@ -1,5 +1,5 @@
 # Import necessary modules and classes
-from flask import Flask, make_response
+from flask import Flask, make_response, request, jsonify
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
 from models import db, Restaurant, Pizza, RestaurantPizza
@@ -48,6 +48,23 @@ class PizzaSchema(ma.SQLAlchemySchema):
 # Create instances of the Pizza schema for single and multiple objects
 pizza_schema = PizzaSchema()
 pizzas_schema = PizzaSchema(many=True)
+
+
+class RestaurantPizzaSchema(ma.SQLAlchemySchema):
+    class Meta:
+        model = RestaurantPizza
+
+    id = ma.auto_field()
+    pizza_id = ma.auto_field()
+    restaurant_id = ma.auto_field()
+    price = ma.auto_field()
+    created_at = ma.auto_field()
+    updated_at = ma.auto_field()
+
+
+# Create instances of the Pizza schema for single and multiple objects
+restaurantpizza_schema = RestaurantPizzaSchema()
+restaurantpizzas_schema = RestaurantPizzaSchema(many=True)
 
 
 # Initialize Flask-RESTful API
@@ -187,6 +204,69 @@ class PizzaByID(Resource):
 
 # Add the PizzaByID resource to handle the "/pizzas/<int:id>" route
 api.add_resource(PizzaByID, "/pizzas/<int:id>")
+
+
+class RestaurantPizzas(Resource):
+    def get(self):
+        restaurantpizza = RestaurantPizza.query.all()
+
+        response = make_response(restaurantpizzas_schema.dump(restaurantpizza), 200)
+
+        return response
+
+    def post(self):
+        try:
+            # Parse the JSON data from the request body
+            price = float(request.form.get("price"))
+            pizza_name = request.form.get("pizza_name")
+            restaurant_name = request.form.get("restaurant_name")
+
+            # Retrieve the associated Pizza and Restaurant by name
+            pizza = Pizza.query.filter_by(name=pizza_name).first()
+            restaurant = Restaurant.query.filter_by(name=restaurant_name).first()
+
+            # Check if the Pizza and Restaurant exist
+            if not pizza or not restaurant:
+                response_dict = {"errors": ["Pizza or Restaurant not found"]}
+                return make_response(jsonify(response_dict), 404)
+
+            # Create a new RestaurantPizza instance
+            restaurant_pizza = RestaurantPizza(
+                pizza=pizza, restaurant=restaurant, price=price
+            )
+
+            # Add and commit the new RestaurantPizza to the database
+            db.session.add(restaurant_pizza)
+            db.session.commit()
+
+            # Serialize and return the associated Pizza data
+            response_dict = {
+                "message": "Restaurant_pizza created for...",
+                "pizza": {
+                    "id": pizza.id,
+                    "name": pizza.name,
+                    "ingredients": pizza.ingredients,
+                },
+                "restaurant": {
+                    "id": restaurant.id,
+                    "name": restaurant.name,
+                    "address": restaurant.address,
+                },
+                "price": restaurant_pizza.price,
+            }
+
+            response = make_response(jsonify(response_dict), 200)
+
+        except Exception as e:
+            # Handle any exceptions that may occur during the creation process
+            response_dict = {"errors": ["An error occurred"]}
+            return make_response(jsonify(response_dict), 500)
+
+        return response
+
+
+# Add the RestaurantPizza resource to handle the route '/restaurantspizza'
+api.add_resource(RestaurantPizzas, "/restaurantspizza")
 
 # Entry point of the application
 if __name__ == "__main__":
