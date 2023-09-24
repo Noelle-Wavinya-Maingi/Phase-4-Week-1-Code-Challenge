@@ -25,7 +25,7 @@ You need to create the following relationships:
 - A Pizza has many Restaurants through RestaurantPizza
 - A RestaurantPizza belongs to a Restaurant and belongs to a Pizza
 
-![img.png](img.png)
+![img.png](https://moringa.instructure.com/courses/498/files/325552/preview)
 
 ## Validations
 
