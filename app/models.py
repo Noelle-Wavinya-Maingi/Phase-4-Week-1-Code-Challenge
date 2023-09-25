@@ -1,7 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
+from app import db
 from sqlalchemy.orm import validates
 
-db = SQLAlchemy()
 
 
 class Restaurant(db.Model):

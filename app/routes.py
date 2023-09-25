@@ -1,75 +1,8 @@
-# Import necessary modules and classes
-from flask import Flask, make_response, request, jsonify
-from flask_migrate import Migrate
-from flask_restful import Api, Resource
-from models import db, Restaurant, Pizza, RestaurantPizza
-from flask_marshmallow import Marshmallow
-
-# Create a Flask application
-app = Flask(__name__)
-
-# Configure the database URI and disable modification tracking
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-# Initialize database and migration
-migrate = Migrate(app, db)
-db.init_app(app)
-
-# Initialize Marshmallow for serialization
-ma = Marshmallow(app)
-
-
-class RestaurantSchema(ma.SQLAlchemySchema):
-    class Meta:
-        model = Restaurant
-
-    id = ma.auto_field()
-    name = ma.auto_field()
-    address = ma.auto_field()
-
-
-# Create instances of the Restaurant schema for single and multiple objects
-restaurant_schema = RestaurantSchema()
-restaurants_schema = RestaurantSchema(many=True)
-
-
-class PizzaSchema(ma.SQLAlchemySchema):
-    class Meta:
-        model = Pizza
-
-    id = ma.auto_field()
-    name = ma.auto_field()
-    ingredients = ma.auto_field()
-    created_at = ma.auto_field()
-    updated_at = ma.auto_field()
-
-
-# Create instances of the Pizza schema for single and multiple objects
-pizza_schema = PizzaSchema()
-pizzas_schema = PizzaSchema(many=True)
-
-
-class RestaurantPizzaSchema(ma.SQLAlchemySchema):
-    class Meta:
-        model = RestaurantPizza
-
-    id = ma.auto_field()
-    pizza_id = ma.auto_field()
-    restaurant_id = ma.auto_field()
-    price = ma.auto_field()
-    created_at = ma.auto_field()
-    updated_at = ma.auto_field()
-
-
-# Create instances of the Pizza schema for single and multiple objects
-restaurantpizza_schema = RestaurantPizzaSchema()
-restaurantpizzas_schema = RestaurantPizzaSchema(many=True)
-
-
-# Initialize Flask-RESTful API
-api = Api(app)
-
+from flask import  make_response, request, jsonify
+from flask_restful import  Resource
+from app import db ,api
+from app.schema import restaurants_schema, restaurant_schema, pizzas_schema, pizza_schema, restaurantpizzas_schema
+from app.models import Pizza, Restaurant, RestaurantPizza
 
 # Define a Resource for the home route ("/")
 class Home(Resource):
@@ -83,9 +16,6 @@ class Home(Resource):
         return response
 
 
-# Add the Home resource to handle the root ("/") route
-api.add_resource(Home, "/")
-
 
 # Define a Resource for the "/restaurants" route
 class Restaurants(Resource):
@@ -97,9 +27,6 @@ class Restaurants(Resource):
 
         return response
 
-
-# Add the Restaurants resource to handle the "/restaurants" route
-api.add_resource(Restaurants, "/restaurants")
 
 
 # Define a Resource for the "/restaurants/<int:id>" route
@@ -147,8 +74,6 @@ class RestaurantByID(Resource):
         return response
 
 
-# Add the RestaurantByID resource to handle the "/restaurants/<int:id>" route
-api.add_resource(RestaurantByID, "/restaurants/<int:id>")
 
 
 class Pizzas(Resource):
@@ -202,10 +127,6 @@ class PizzaByID(Resource):
         return response
 
 
-# Add the PizzaByID resource to handle the "/pizzas/<int:id>" route
-api.add_resource(PizzaByID, "/pizzas/<int:id>")
-
-
 class RestaurantPizzas(Resource):
     def get(self):
         restaurantpizza = RestaurantPizza.query.all()
@@ -216,7 +137,7 @@ class RestaurantPizzas(Resource):
 
     def post(self):
         try:
-            # Parse the JSON data from the request body
+            # Parse form data from the request body
             price = float(request.form.get("price"))
             pizza_name = request.form.get("pizza_name")
             restaurant_name = request.form.get("restaurant_name")
@@ -232,7 +153,7 @@ class RestaurantPizzas(Resource):
 
             # Create a new RestaurantPizza instance
             restaurant_pizza = RestaurantPizza(
-                pizza=pizza, restaurant=restaurant, price=price
+                pizza_id=pizza.id, restaurant_id=restaurant.id, price=price
             )
 
             # Add and commit the new RestaurantPizza to the database
@@ -241,7 +162,7 @@ class RestaurantPizzas(Resource):
 
             # Serialize and return the associated Pizza data
             response_dict = {
-                "message": "Restaurant_pizza created for...",
+                "message": "Restaurant_pizza created successfully",
                 "pizza": {
                     "id": pizza.id,
                     "name": pizza.name,
@@ -255,19 +176,25 @@ class RestaurantPizzas(Resource):
                 "price": restaurant_pizza.price,
             }
 
-            response = make_response(jsonify(response_dict), 200)
+            response = make_response(jsonify(response_dict), 201)  # Use 201 Created status code
 
         except Exception as e:
             # Handle any exceptions that may occur during the creation process
-            response_dict = {"errors": ["An error occurred"]}
+            response_dict = {"errors": ["An error occurred: " + str(e)]}
             return make_response(jsonify(response_dict), 500)
 
         return response
 
 
+# Add the Home resource to handle the root ("/") route
+api.add_resource(Home, "/")
 # Add the RestaurantPizza resource to handle the route '/restaurantspizza'
 api.add_resource(RestaurantPizzas, "/restaurantspizza")
+# Add the PizzaByID resource to handle the "/pizzas/<int:id>" route
+api.add_resource(PizzaByID, "/pizzas/<int:id>")
+# Add the RestaurantByID resource to handle the "/restaurants/<int:id>" route
+api.add_resource(RestaurantByID, "/restaurants/<int:id>")
+# Add the Restaurants resource to handle the "/restaurants" route
+api.add_resource(Restaurants, "/restaurants")
 
-# Entry point of the application
-if __name__ == "__main__":
-    app.run(port=5555)
+
