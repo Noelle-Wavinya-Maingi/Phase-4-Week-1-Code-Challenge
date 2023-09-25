@@ -1,8 +1,8 @@
 from flask import  make_response, request, jsonify
 from flask_restful import  Resource
-from app import db ,api
-from app.schema import restaurants_schema, restaurant_schema, pizzas_schema, pizza_schema, restaurantpizzas_schema
-from app.models import Pizza, Restaurant, RestaurantPizza
+from server import db ,api
+from server.schema import restaurants_schema, restaurant_schema, pizzas_schema, pizza_schema, restaurantpizzas_schema
+from server.models import Pizza, Restaurant, RestaurantPizza
 
 # Define a Resource for the home route ("/")
 class Home(Resource):
@@ -84,11 +84,6 @@ class Pizzas(Resource):
         response = make_response(pizzas_schema.dump(pizza), 200)
 
         return response
-
-
-# Add the Pizzas resource to handle the "/pizzas" route
-api.add_resource(Pizzas, "/pizzas")
-
 
 class PizzaByID(Resource):
     def get(self, id):
@@ -196,5 +191,8 @@ api.add_resource(PizzaByID, "/pizzas/<int:id>")
 api.add_resource(RestaurantByID, "/restaurants/<int:id>")
 # Add the Restaurants resource to handle the "/restaurants" route
 api.add_resource(Restaurants, "/restaurants")
+# Add the Pizzas resource to handle the "/pizzas" route
+api.add_resource(Pizzas, "/pizzas")
+
 
 

@@ -4,9 +4,6 @@ from flask_migrate import Migrate
 from flask_restful import Api, Resource
 from flask_marshmallow import Marshmallow
 
-
-
-
 # Create a Flask application
 app = Flask(__name__)
 api = Api(app)
@@ -21,4 +18,4 @@ db = SQLAlchemy(app)
 # Initialize database and migration
 migrate = Migrate(app, db)
 
-from app import routes
+from server import routes

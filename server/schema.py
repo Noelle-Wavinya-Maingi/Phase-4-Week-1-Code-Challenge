@@ -1,5 +1,5 @@
-from app import ma
-from app.models import Restaurant, Pizza, RestaurantPizza
+from server import ma
+from server.models import Restaurant, Pizza, RestaurantPizza
 
 class RestaurantSchema(ma.SQLAlchemySchema):
     class Meta:

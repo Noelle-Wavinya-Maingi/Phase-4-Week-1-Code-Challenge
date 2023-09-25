@@ -1,6 +1,6 @@
 # Import necessary modules and classes
 
-from app import app
+from server import app
 
 # Entry point of the application
 if __name__ == "__main__":
