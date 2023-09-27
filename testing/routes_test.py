@@ -1,7 +1,5 @@
 from server import app
 
-
-
 class TestApp:
     def test_home_view(self):
      client = app.test_client(self)
